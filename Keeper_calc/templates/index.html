@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Keeper Calculator</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+<body>
+
+    <main class="container">
+
+        <header class="header">
+
+            <div class="football-icon">🏈</div>
+
+            <h1>Keeper Calculator</h1>
+
+            <p>
+                14-Team Snake Draft
+            </p>
+
+        </header>
+
+
+        <section class="card">
+
+            <form method="POST">
+
+                <div class="form-group">
+
+                    <label for="player_name">
+                        Player Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="player_name"
+                        name="player_name"
+                        placeholder="e.g. Bijan Robinson"
+                        value="{{ form_data.player_name }}"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="drafted_round">
+                        Drafted Round Last Year
+                    </label>
+
+                    <input
+                        type="number"
+                        id="drafted_round"
+                        name="drafted_round"
+                        min="1"
+                        placeholder="e.g. 3"
+                        value="{{ form_data.drafted_round }}"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="current_adp">
+                        Current Sleeper ADP
+                    </label>
+
+                    <input
+                        type="number"
+                        id="current_adp"
+                        name="current_adp"
+                        min="0"
+                        step="0.1"
+                        placeholder="e.g. 8.5"
+                        value="{{ form_data.current_adp }}"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="draft_position">
+                        Your Draft Position
+                    </label>
+
+                    <select
+                        id="draft_position"
+                        name="draft_position"
+                        required
+                    >
+
+                        <option value="">
+                            Select position
+                        </option>
+
+                        {% for position in range(1, teams + 1) %}
+
+                            <option
+                                value="{{ position }}"
+                                {% if form_data.draft_position|int == position %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ position }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Did you draft this player last year?
+                    </label>
+
+                    <div class="radio-group">
+
+                        <label class="radio-option">
+
+                            <input
+                                type="radio"
+                                name="drafted_by_you"
+                                value="yes"
+                                {% if form_data.drafted_by_you == "yes" %}
+                                    checked
+                                {% endif %}
+                            >
+
+                            <span>Yes</span>
+
+                        </label>
+
+
+                        <label class="radio-option">
+
+                            <input
+                                type="radio"
+                                name="drafted_by_you"
+                                value="no"
+                                {% if form_data.drafted_by_you == "no" %}
+                                    checked
+                                {% endif %}
+                            >
+
+                            <span>No</span>
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <button type="submit">
+                    Calculate Keeper Cost
+                </button>
+
+            </form>
+
+
+            {% if error %}
+
+                <div class="error">
+                    {{ error }}
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        {% if result %}
+
+            <section class="results">
+
+                <div class="result-header">
+
+                    <span>Keeper Calculation</span>
+
+                    <h2>
+                        {{ result.player_name }}
+                    </h2>
+
+                </div>
+
+
+                <div class="details-grid">
+
+                    <div class="detail">
+
+                        <span class="label">
+                            League Size
+                        </span>
+
+                        <strong>
+                            {{ teams }} teams
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail">
+
+                        <span class="label">
+                            Draft Position
+                        </span>
+
+                        <strong>
+                            {{ form_data.draft_position }}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail">
+
+                        <span class="label">
+                            Sleeper ADP
+                        </span>
+
+                        <strong>
+                            {{ "%.1f"|format(result.current_adp) }}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail">
+
+                        <span class="label">
+                            ADP + 35 Cap
+                        </span>
+
+                        <strong>
+                            {{ "%.1f"|format(result.maximum_allowed_pick) }}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="base-cost">
+
+                    <span class="label">
+                        Base Keeper Cost
+                    </span>
+
+                    <strong>
+                        Round {{ result.base_round }},
+                        Pick {{ result.base_pick_in_round }}
+                        <span>
+                            (Overall Pick {{ result.base_pick }})
+                        </span>
+                    </strong>
+
+                </div>
+
+
+                {% if result.adjusted %}
+
+                    <div class="adjusted-result">
+
+                        <div class="result-title">
+                            Keeper Price Adjusted
+                        </div>
+
+                        <p>
+                            The normal keeper pick would be
+                            <strong>
+                                Round {{ result.base_round }},
+                                Pick {{ result.base_pick_in_round }}
+                                (Overall Pick {{ result.base_pick }})
+                            </strong>.
+                        </p>
+
+                        <p>
+                            That exceeds the ADP cap of
+                            <strong>
+                                {{ "%.1f"|format(result.maximum_allowed_pick) }}
+                            </strong>.
+                        </p>
+
+                        <div class="keeper-cost">
+
+                            <span class="label">
+                                Latest Eligible Pick
+                            </span>
+
+                            <strong>
+                                Round {{ result.keeper_round }},
+                                Pick {{ result.keeper_pick_in_round }}
+                            </strong>
+
+                            <span class="overall">
+                                Overall Pick {{ result.keeper_pick }}
+                            </span>
+
+                        </div>
+
+                        <div class="following-pick">
+                            (Following pick: Round {{ result.next_round }},
+                            Pick {{ result.next_pick_in_round }},
+                            Overall Pick {{ result.next_pick }})
+                        </div>
+
+                    </div>
+
+                {% else %}
+
+                    <div class="standard-result">
+
+                        <div class="result-title">
+                            Standard Keeper Price
+                        </div>
+
+                        <div class="keeper-cost">
+
+                            <span class="label">
+                                Keeper Cost
+                            </span>
+
+                            <strong>
+                                Round {{ result.keeper_round }},
+                                Pick {{ result.keeper_pick_in_round }}
+                            </strong>
+
+                            <span class="overall">
+                                Overall Pick {{ result.keeper_pick }}
+                            </span>
+
+                        </div>
+
+                        <div class="following-pick">
+                            (Following pick: Round {{ result.next_round }},
+                            Pick {{ result.next_pick_in_round }},
+                            Overall Pick {{ result.next_pick }})
+                        </div>
+
+                        <p class="explanation">
+                            The normal keeper price is within
+                            the ADP + 35 pick cap.
+                        </p>
+
+                    </div>
+
+                {% endif %}
+
+
+                <div class="adp-difference">
+
+                    {{ result.player_name }}'s keeper pick is
+
+                    <strong>
+                        {{ "%.1f"|format(result.difference) }}
+                    </strong>
+
+                    picks after the player's ADP.
+
+                </div>
+
+            </section>
+
+        {% endif %}
+
+
+        <footer>
+
+            <p>
+                Keeper Calculator • 14-Team Snake Draft
+            </p>
+
+        </footer>
+
+    </main>
+
+</body>
+
+</html>
